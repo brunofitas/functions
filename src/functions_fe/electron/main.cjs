@@ -7,6 +7,8 @@ const path = require("node:path");
 const fs = require("node:fs");
 const http = require("node:http");
 
+app.setName("functions Studio"); // macOS menu bar / Dock / app name (dev + packaged)
+
 const PORT = Number(process.env.FUNCTIONS_PORT || 8799);
 const ROOT = path.resolve(__dirname, "..", "..", ".."); // repo root (…/functions)
 const PYTHON = process.env.FUNCTIONS_PYTHON || path.join(ROOT, ".venv", "bin", "python");
@@ -99,10 +101,12 @@ function createWindow() {
     height: b.height || 840,
     x: b.x,
     y: b.y,
-    title: "functions — Studio",
+    title: "functions Studio",
     backgroundColor: "#0f1115",
     webPreferences: { preload: path.join(__dirname, "preload.cjs"), contextIsolation: true },
   });
+  // keep the window title fixed (don't let the loaded page's <title> override it)
+  win.on("page-title-updated", (e) => e.preventDefault());
   const remember = () => {
     if (win) {
       settings.bounds = win.getBounds();

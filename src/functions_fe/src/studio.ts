@@ -167,7 +167,8 @@ function main(): void {
   const wordmark = el("span", {});
   wordmark.append(document.createTextNode("functions "), el("span", { class: "brand-sub" }, "Studio"));
   brand.append(wordmark);
-  const gear = el("button", { class: "icon-btn", title: "Settings" }, "⚙") as HTMLButtonElement;
+  const gear = el("button", { class: "settings-btn", title: "Settings" }) as HTMLButtonElement;
+  gear.append(el("span", { class: "gear" }, "⚙"), el("span", {}, "Settings"));
   topbar.append(brand, gear);
 
   const content = el("div", { class: "content" });

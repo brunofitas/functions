@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>functions — Studio</title>
+<title>functions Studio</title>
 <style>
   :root {
     color-scheme: dark;
@@ -56,13 +56,15 @@
     background: linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow: 0 4px 12px -2px rgba(109, 114, 246, .6);
   }
   .brand .brand-sub { color: var(--faint); font-weight: 500; }
-  .icon-btn {
-    margin-left: auto; width: 38px; height: 38px; border-radius: 10px; padding: 0; cursor: pointer;
-    background: transparent; color: var(--muted); font-size: 17px; border: 1px solid transparent;
-    display: grid; place-items: center; transition: all .15s ease;
+  .settings-btn {
+    margin-left: auto; display: inline-flex; align-items: center; gap: 9px; padding: 8px 15px;
+    border-radius: 10px; cursor: pointer; background: transparent; color: var(--muted);
+    border: 1px solid transparent; font-family: var(--ui); font-weight: 600; font-size: 13.5px;
+    transition: all .15s ease;
   }
-  .icon-btn:hover { background: var(--surface-2); color: var(--text); border-color: var(--border); }
-  .icon-btn.active { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; border-color: transparent; }
+  .settings-btn .gear { font-size: 22px; line-height: 1; }
+  .settings-btn:hover { background: var(--surface-2); color: var(--text); border-color: var(--border); }
+  .settings-btn.active { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; border-color: transparent; }
 
   .content { flex: 1; min-height: 0; overflow: auto; padding: 30px 34px; }
 
@@ -130,8 +132,8 @@
   .menu-item.active { background: var(--surface-2); color: var(--text); }
   .settings-panel { flex: 1; min-width: 0; max-width: 640px; }
   .section-label { font-size: 11px; color: var(--faint); letter-spacing: .13em; text-transform: uppercase; margin-bottom: 11px; font-weight: 600; }
-  .engine-options { display: flex; flex-direction: column; gap: 10px; }
-  .engine-opt { display: flex; align-items: flex-start; gap: 13px; padding: 15px 16px; border: 1px solid var(--border-soft); border-radius: var(--radius); background: var(--surface); cursor: pointer; transition: all .15s ease; }
+  .engine-options { display: flex; gap: 12px; flex-wrap: wrap; }
+  .engine-opt { flex: 1; min-width: 220px; display: flex; align-items: flex-start; gap: 13px; padding: 15px 16px; border: 1px solid var(--border-soft); border-radius: var(--radius); background: var(--surface); cursor: pointer; transition: all .15s ease; }
   .engine-opt:hover { border-color: var(--border); }
   .engine-opt:has(input:checked) { border-color: var(--accent); background: rgba(109, 114, 246, .07); box-shadow: 0 0 0 1px var(--accent); }
   .engine-opt input { margin: 2px 0 0; accent-color: var(--accent); width: 16px; height: 16px; }

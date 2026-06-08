@@ -2,7 +2,7 @@
 # (PyInstaller) so the app ships with Python + all deps. Version is injected in CI from
 # GitVersion via -c.extraMetadata.version.
 appId: com.brunofitas.functions
-productName: functions
+productName: functions Studio
 directories:
   output: ../../dist-app
 files:
