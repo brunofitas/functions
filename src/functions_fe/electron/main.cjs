@@ -14,6 +14,11 @@ const BASE_DIR = process.env.FUNCTIONS_BASE_DIR || "examples";
 let orchestrator = null;
 
 function startOrchestrator() {
+  // Pipelines run in Docker by default (the sandbox); set FUNCTIONS_BACKEND=host to opt out.
+  const dockerArgs =
+    process.env.FUNCTIONS_BACKEND === "host"
+      ? []
+      : ["--docker", "--image", process.env.FUNCTIONS_IMAGE || "python:3.12-slim"];
   let cmd;
   let args;
   let cwd;
@@ -23,12 +28,12 @@ function startOrchestrator() {
     const exe = process.platform === "win32" ? "functions-orchestrator.exe" : "functions-orchestrator";
     cmd = path.join(res, "orchestrator", exe);
     args = ["--gui", "--gui-dir", path.join(res, "gui"), "--port", String(PORT),
-            "--base-dir", path.join(res, "examples")];
+            "--base-dir", path.join(res, "examples"), ...dockerArgs];
     cwd = res;
   } else {
     // dev: use the repo venv
     cmd = PYTHON;
-    args = ["-m", "functions_be", "--gui", "--port", String(PORT), "--base-dir", BASE_DIR];
+    args = ["-m", "functions_be", "--gui", "--port", String(PORT), "--base-dir", BASE_DIR, ...dockerArgs];
     cwd = ROOT;
   }
   orchestrator = spawn(cmd, args, { cwd, stdio: "inherit" });
