@@ -1,0 +1,8 @@
+kind: pipeline
+namespace: demo
+name: memory
+steps:
+  - id: remember
+    use: ./remember
+  - id: recall
+    use: ./recall

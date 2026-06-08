@@ -1,0 +1,4 @@
+kind: function
+namespace: demo
+name: recall
+runtime: claude
