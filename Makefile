@@ -3,8 +3,10 @@
 #   make setup      shared root .venv + all Python modules (editable) + dev deps; fe deps
 #   make test       run EVERYTHING with coverage gates (Python ≥85%, frontend ≥85%)
 #   make lint       ruff (Python) + tsc typecheck (frontend)
+#   make app        RUN the native desktop app (Electron) ← what you want to "see it"
+#   make studio     RUN the web Studio (orchestrator serves the GUI in your browser)
 #   make build      build Python wheels + frontend bundle
-#   make deploy     build, then produce release artifacts (installers via infra_003 CI)
+#   make deploy     build only — does NOT launch the app; CI produces installers
 #   make coverage   tests + coverage reports (alias of test)
 #   make clean      remove venv, caches, build output
 #
@@ -56,13 +58,22 @@ ifneq ($(HAVE_NPM),)
 endif
 	@echo "✓ build artifacts in dist/ and $(FE)/dist/"
 
+# RUN the native desktop app (Electron spawns the orchestrator + opens a window).
+app:
+	cd $(FE) && npm run app
+
+# RUN the web Studio: orchestrator serves the GUI; then open http://127.0.0.1:8799
+studio:
+	$(PY) -m functions_be --base-dir examples --gui
+
 deploy: build
-	@echo "deploy: cross-platform installers are produced by GitHub Actions on a tag"
-	@echo "        (story infra_003). Local 'build' artifacts are the inputs."
+	@echo "NOTE: 'deploy' only BUILDS — it does not launch the app."
+	@echo "      To SEE the app run:  make app   (desktop)   or   make studio   (browser)"
+	@echo "      Cross-platform installers are produced by CI on merge to main (infra_006)."
 
 clean:
-	rm -rf $(VENV) dist .pytest_cache .ruff_cache .coverage htmlcov
+	rm -rf $(VENV) dist dist-app .pytest_cache .ruff_cache .coverage htmlcov
 	find src -name __pycache__ -type d -exec rm -rf {} + 2>/dev/null || true
 	rm -rf $(FE)/node_modules $(FE)/dist $(FE)/coverage
 
-.PHONY: setup test test-py test-fe coverage lint build deploy clean
+.PHONY: setup test test-py test-fe coverage lint build app studio deploy clean

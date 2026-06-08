@@ -33,12 +33,16 @@ def main() -> None:  # pragma: no cover — CLI entrypoint
     p.add_argument("--port", type=int, default=8799)
     p.add_argument("--base-dir", default=".", help="where function refs resolve from")
     p.add_argument("--gui", action="store_true", help="also serve the Studio GUI at /")
+    p.add_argument("--gui-dir", default=None, help="GUI dir (index.html + dist/studio.js); for packaged builds")
     p.add_argument("--docker", action="store_true", help="run pipelines inside Docker containers")
     p.add_argument("--image", default="python:3.12-slim", help="base image for --docker runs")
     p.add_argument("--claude", action="store_true", help="use claude-docker image + inject token")
     args = p.parse_args()
 
-    gui_dir = str(Path(__file__).resolve().parents[2] / "functions_fe") if args.gui else None
+    gui_dir = None
+    if args.gui:
+        # explicit --gui-dir (packaged) wins; else the in-repo dev path
+        gui_dir = args.gui_dir or str(Path(__file__).resolve().parents[2] / "functions_fe")
 
     container_manager = None
     if args.docker or args.claude:

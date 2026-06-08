@@ -14,11 +14,24 @@ const BASE_DIR = process.env.FUNCTIONS_BASE_DIR || "examples";
 let orchestrator = null;
 
 function startOrchestrator() {
-  orchestrator = spawn(
-    PYTHON,
-    ["-m", "functions_be", "--gui", "--port", String(PORT), "--base-dir", BASE_DIR],
-    { cwd: ROOT, stdio: "inherit" },
-  );
+  let cmd;
+  let args;
+  let cwd;
+  if (app.isPackaged) {
+    // shipped: run the self-contained PyInstaller binary (no system Python needed)
+    const res = process.resourcesPath;
+    const exe = process.platform === "win32" ? "functions-orchestrator.exe" : "functions-orchestrator";
+    cmd = path.join(res, "orchestrator", exe);
+    args = ["--gui", "--gui-dir", path.join(res, "gui"), "--port", String(PORT),
+            "--base-dir", path.join(res, "examples")];
+    cwd = res;
+  } else {
+    // dev: use the repo venv
+    cmd = PYTHON;
+    args = ["-m", "functions_be", "--gui", "--port", String(PORT), "--base-dir", BASE_DIR];
+    cwd = ROOT;
+  }
+  orchestrator = spawn(cmd, args, { cwd, stdio: "inherit" });
   orchestrator.on("error", (e) => console.error("orchestrator failed to start:", e.message));
 }
 

@@ -1,0 +1,16 @@
+# GitVersion — derive SemVer from git history (infra_006).
+# Start at 0.0.1; default bump is Patch. Bump higher with commit-message strings:
+#   +semver: major   (or breaking)   → X+1.0.0
+#   +semver: minor   (or feature)    → x.Y+1.0
+#   +semver: patch   (or fix)        → x.y.Z+1   (also the default)
+next-version: 0.0.1
+mode: ContinuousDelivery
+increment: Patch
+commit-message-incrementing: Enabled
+major-version-bump-message: '\+semver:\s?(breaking|major)'
+minor-version-bump-message: '\+semver:\s?(feature|minor)'
+patch-version-bump-message: '\+semver:\s?(fix|patch)'
+branches:
+  main:
+    regex: ^master$|^main$
+    increment: Patch
