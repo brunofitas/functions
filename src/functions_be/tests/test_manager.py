@@ -25,7 +25,9 @@ def test_argv_builders():
     create = m.create_argv("r1", MOUNTS)
     assert m.name("r1") == "functions-r1"
     assert "functions-r1" in create
-    assert "/host/work:/work" in create and "/host/lib:/lib" in create and "/host/cache:/cache" in create
+    assert "/host/work:/work" in create
+    assert "/host/lib:/srv/functions" in create  # NOT /lib (would shadow system libs)
+    assert "/host/cache:/cache" in create
     assert create[-3:] == ["functions-base:1.0", "sleep", "infinity"]
     assert m.rm_argv("r1") == ["docker", "rm", "-f", "functions-r1"]
 

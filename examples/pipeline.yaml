@@ -1,0 +1,10 @@
+kind: pipeline
+namespace: demo
+name: hello
+steps:
+  - id: greet
+    use: ./greet
+    with: { name: "world" }
+  - id: shout
+    use: ./shout
+    with: { greeting: "${{ steps.greet.outputs.greeting }}" }

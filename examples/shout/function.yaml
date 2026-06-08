@@ -1,0 +1,6 @@
+kind: function
+namespace: demo
+name: shout
+runtime: python
+outputs: [{ name: shout, type: string }]
+requirements: { inputs: [{ name: greeting, type: string }] }

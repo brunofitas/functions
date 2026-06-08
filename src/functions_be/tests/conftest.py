@@ -18,8 +18,21 @@ class FakeContainer:
     def workspace(self):
         return self._ws
 
-    def path(self, rel):
-        return self._ws / rel
+    def write(self, rel, content):
+        p = self._ws / rel
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(content)
+        return str(p)
+
+    def read(self, rel):
+        p = self._ws / rel
+        return p.read_text() if p.exists() else ""
+
+    def container_path(self, rel):
+        return str(self._ws / rel)
+
+    def mount_function(self, host_dir):
+        return str(host_dir)
 
     async def exec_stream(self, argv, *, cwd=None, env=None):
         self.calls.append(argv)
@@ -50,6 +63,7 @@ def make_context(function_dir: Path, container, *, runtime="claude", inputs=None
         step_id="s",
         function=fn,
         function_dir=function_dir,
+        function_cpath=str(function_dir),
         container=container,
         inputs=inputs or {},
         env={},

@@ -43,6 +43,7 @@ class Engine:
             step_id=step_id,
             function=fn,
             function_dir=loaded.dir,
+            function_cpath=self.container.mount_function(loaded.dir),
             container=self.container,
             inputs=inputs,
             env=env,

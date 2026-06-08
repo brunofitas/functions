@@ -9,9 +9,9 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Volumes mounted by the ContainerManager:
-#   /work   shared workspace (fixed root, per run)
-#   /lib    function library
-#   /cache  shared dependency cache (apt/pip) for fast recreate
+#   /work            shared workspace (fixed root, per run)
+#   /srv/functions   function library (NOT /lib — that would shadow system libs)
+#   /cache           shared dependency cache (apt/pip) for fast recreate
 WORKDIR /work
 
 # The container idles; the orchestrator drives each step via `docker exec`

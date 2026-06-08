@@ -18,11 +18,24 @@ async def test_local_container_returncode(tmp_path):
     assert c.last_returncode == 3
 
 
-def test_docker_argv_builder():
-    c = DockerContainer("cid123", workspace="/work")
+def test_docker_argv_builder(tmp_path):
+    c = DockerContainer("cid123", host_workspace=tmp_path, workspace="/work")
     argv = c.docker_argv(["bash", "x.sh"], env={"K": "V"})
     assert argv[:4] == ["docker", "exec", "-w", "/work"]
     assert "-e" in argv and "K=V" in argv and "cid123" in argv and argv[-2:] == ["bash", "x.sh"]
+
+
+def test_docker_container_maps_paths(tmp_path):
+    c = DockerContainer("cid", host_workspace=tmp_path, workspace="/work")
+    cpath = c.write(".functions/in.json", '{"a":1}')
+    assert cpath == "/work/.functions/in.json"  # in-container path
+    assert (tmp_path / ".functions" / "in.json").read_text() == '{"a":1}'  # written host-side
+    assert c.read(".functions/in.json") == '{"a":1}'
+    (tmp_path / "fn").mkdir()
+    (tmp_path / "fn" / "run.sh").write_text("echo hi")
+    mounted = c.mount_function(tmp_path / "fn")
+    assert mounted == "/work/.fn/fn"
+    assert (tmp_path / ".fn" / "fn" / "run.sh").exists()
 
 
 def _fn(**kw):

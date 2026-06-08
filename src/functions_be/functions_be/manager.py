@@ -40,11 +40,15 @@ class ContainerManager:
     def name(self, run_id: str) -> str:
         return f"functions-{run_id}"
 
+    # NOTE: the library mounts at /srv/functions, NOT /lib — bind-mounting over the
+    # container's /lib shadows libc + the dynamic loader and breaks every binary.
+    LIB_MOUNT = "/srv/functions"
+
     def create_argv(self, run_id: str, mounts: Mounts) -> list[str]:
         return [
             "docker", "run", "-d", "--name", self.name(run_id),
             "-v", f"{mounts.workspace}:/work",
-            "-v", f"{mounts.lib}:/lib",
+            "-v", f"{mounts.lib}:{self.LIB_MOUNT}",
             "-v", f"{mounts.cache}:/cache",
             "-w", "/work",
             self.image, "sleep", "infinity",
@@ -63,7 +67,7 @@ class ContainerManager:
             rc, out = self._run(self.create_argv(run_id, mounts))
             if rc != 0:
                 raise DockerError(f"failed to create container {self.name(run_id)}: {out}")
-        return DockerContainer(self.name(run_id), workspace="/work")
+        return DockerContainer(self.name(run_id), host_workspace=mounts.workspace, workspace="/work")
 
     def teardown(self, run_id: str) -> None:
         self._run(self.rm_argv(run_id))

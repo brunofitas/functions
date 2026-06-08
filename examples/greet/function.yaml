@@ -1,0 +1,6 @@
+kind: function
+namespace: demo
+name: greet
+runtime: bash
+outputs: [{ name: greeting, type: string }]
+requirements: { inputs: [{ name: name, type: string }] }

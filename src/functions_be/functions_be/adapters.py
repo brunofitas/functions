@@ -18,8 +18,6 @@ from functions_shared import (
     Capabilities,
     FunctionManifest,
     input_env_mirror,
-    read_outputs,
-    write_inputs,
 )
 
 from . import sandbox
@@ -32,14 +30,15 @@ class RunContext:
     run_id: str
     step_id: str
     function: FunctionManifest
-    function_dir: Path
+    function_dir: Path  # host dir (for reading prompt.md)
+    function_cpath: str  # in-container path to the function dir
     container: Container
     inputs: dict
     env: dict
     session_id: str
     first_claude: bool = False
     returncode: int = 0
-    output_path: Optional[Path] = None
+    output_rel: Optional[str] = None
 
 
 class UnknownRuntimeError(ValueError):
@@ -47,18 +46,15 @@ class UnknownRuntimeError(ValueError):
 
 
 def _prepare_io(ctx: RunContext) -> dict:
-    """Write the inputs file, point FN_INPUTS/FN_OUTPUTS at it, mirror scalars to env."""
-    iodir = ctx.container.path(".functions")
-    iodir.mkdir(parents=True, exist_ok=True)
-    in_path = iodir / f"{ctx.step_id}.in.json"
-    out_path = iodir / f"{ctx.step_id}.out.json"
-    write_inputs(in_path, ctx.inputs)
-    if out_path.exists():
-        out_path.unlink()
-    ctx.output_path = out_path
+    """Write the inputs file (workspace-relative), point FN_INPUTS/FN_OUTPUTS at the
+    in-container paths, and mirror scalar inputs to env."""
+    in_rel = f".functions/{ctx.step_id}.in.json"
+    out_rel = f".functions/{ctx.step_id}.out.json"
+    in_cpath = ctx.container.write(in_rel, json.dumps(ctx.inputs))
+    ctx.output_rel = out_rel
     env = dict(ctx.env)
-    env[FN_INPUTS] = str(in_path)
-    env[FN_OUTPUTS] = str(out_path)
+    env[FN_INPUTS] = in_cpath
+    env[FN_OUTPUTS] = ctx.container.container_path(out_rel)
     env.update(input_env_mirror(ctx.inputs))
     return env
 
@@ -75,11 +71,12 @@ class RuntimeAdapter:
         yield  # pragma: no cover
 
     async def collect(self, ctx: RunContext) -> dict:
-        return read_outputs(ctx.output_path) if ctx.output_path else {}
+        text = ctx.container.read(ctx.output_rel) if ctx.output_rel else ""
+        return json.loads(text) if text.strip() else {}
 
 
 class SubprocessAdapter(RuntimeAdapter):
-    def _argv(self, fn: FunctionManifest, function_dir: Path) -> list[str]:
+    def _argv(self, fn: FunctionManifest, function_cpath: str) -> list[str]:
         raise NotImplementedError
 
     def _deps(self, fn: FunctionManifest) -> list[str]:
@@ -98,7 +95,7 @@ class SubprocessAdapter(RuntimeAdapter):
 
     async def execute(self, ctx):
         env = _prepare_io(ctx)
-        argv = self._argv(ctx.function, ctx.function_dir)
+        argv = self._argv(ctx.function, ctx.function_cpath)
         async for line in ctx.container.exec_stream(argv, env=env):
             yield Event("text", ctx.run_id, ctx.step_id, 0, {"text": line})
         ctx.returncode = ctx.container.last_returncode
@@ -110,8 +107,8 @@ class BashAdapter(SubprocessAdapter):
         is_llm=False, memory="none", default_entrypoint="run.sh", dep_kinds=["system"]
     )
 
-    def _argv(self, fn, function_dir):
-        return ["bash", str(function_dir / fn.resolved_entrypoint())]
+    def _argv(self, fn, function_cpath):
+        return ["bash", f"{function_cpath}/{fn.resolved_entrypoint()}"]
 
     def _deps(self, fn):
         return fn.dependencies.system
@@ -126,8 +123,8 @@ class PythonAdapter(SubprocessAdapter):
         is_llm=False, memory="none", default_entrypoint="main.py", dep_kinds=["python"]
     )
 
-    def _argv(self, fn, function_dir):
-        return ["python3", str(function_dir / fn.resolved_entrypoint())]
+    def _argv(self, fn, function_cpath):
+        return ["python3", f"{function_cpath}/{fn.resolved_entrypoint()}"]
 
     def _deps(self, fn):
         return fn.dependencies.python
@@ -142,8 +139,8 @@ class CustomAdapter(SubprocessAdapter):
         is_llm=False, memory="none", default_entrypoint="Makefile", dep_kinds=[]
     )
 
-    def _argv(self, fn, function_dir):
-        return ["make", "-C", str(function_dir), "run"]
+    def _argv(self, fn, function_cpath):
+        return ["make", "-C", function_cpath, "run"]
 
 
 class ClaudeAdapter(RuntimeAdapter):
@@ -163,7 +160,7 @@ class ClaudeAdapter(RuntimeAdapter):
             "--verbose",
             *sandbox.claude_permission_args(),
             "--add-dir",
-            str(ctx.function_dir),
+            ctx.function_cpath,
             session_flag,
             ctx.session_id,
         ]
