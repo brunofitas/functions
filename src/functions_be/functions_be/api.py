@@ -8,6 +8,7 @@ tests). The container is a host LocalContainer for now (warm-container mgr is in
 
 from __future__ import annotations
 
+import shutil
 import tempfile
 import uuid
 from pathlib import Path
@@ -45,6 +46,8 @@ class RunManager:
         self.base_dir = str(base_dir)
         self.runs: dict[str, _Run] = {}
         self.container_manager = container_manager  # ContainerManager → run in Docker
+        # one shared dependency cache reused across runs (per d_infra_001)
+        self._cache_dir = tempfile.mkdtemp(prefix="fn-cache-") if container_manager else None
 
     def start(self, pipeline: PipelineManifest, base_dir: Optional[str] = None) -> _Run:
         run = _Run(uuid.uuid4().hex[:8], pipeline, base_dir or self.base_dir)
@@ -55,14 +58,11 @@ class RunManager:
         run = self.runs[run_id]
         run.status = "running"
         workspace = Path(tempfile.mkdtemp(prefix=f"fn-{run_id}-"))
-        if self.container_manager is not None:
+        docker = self.container_manager is not None
+        if docker:
             from .manager import Mounts
 
-            mounts = Mounts(
-                workspace=str(workspace),
-                lib=run.base_dir,
-                cache=tempfile.mkdtemp(prefix="fn-cache-"),
-            )
+            mounts = Mounts(workspace=str(workspace), lib=run.base_dir, cache=self._cache_dir)
             container = self.container_manager.ensure_ready(run_id, mounts)
         else:
             container = LocalContainer(workspace)
@@ -79,6 +79,11 @@ class RunManager:
         except Exception as exc:  # noqa: BLE001 — surface as an error event
             run.status = "error"
             yield Event("error", run_id, payload={"message": str(exc)})
+        finally:
+            # fresh-per-run: always tear the container down + clean the run workspace
+            if docker:
+                self.container_manager.teardown(run_id)
+            shutil.rmtree(workspace, ignore_errors=True)
 
 
 def _serialize(event: Event) -> dict:

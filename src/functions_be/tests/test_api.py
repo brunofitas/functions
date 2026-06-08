@@ -101,3 +101,30 @@ def test_end_unknown_run_is_404(tmp_path):
     client = TestClient(create_app(token=TOKEN, manager=RunManager(str(tmp_path))))
     resp = client.post("/runs/nope/end", headers={"Authorization": f"Bearer {TOKEN}"})
     assert resp.status_code == 404
+
+
+async def test_docker_run_tears_down_container(tmp_path):
+    """Docker-backed runs must NOT leak containers — teardown after every run."""
+    from conftest import FakeContainer
+    from functions_shared import PipelineManifest
+
+    class FakeManager:
+        def __init__(self):
+            self.created = []
+            self.torn = []
+
+        def ensure_ready(self, run_id, mounts):
+            self.created.append(run_id)
+            return FakeContainer(tmp_path / f"ws-{run_id}")
+
+        def teardown(self, run_id):
+            self.torn.append(run_id)
+
+    mgr = FakeManager()
+    rm = RunManager(base_dir=str(tmp_path), container_manager=mgr)
+    run = rm.start(PipelineManifest.model_validate({"namespace": "n", "name": "p", "steps": []}))
+    events = [e async for e in rm.stream(run.run_id)]
+
+    assert mgr.created == [run.run_id]
+    assert mgr.torn == [run.run_id]  # container torn down (no leak)
+    assert any(e.kind == "run_end" for e in events)
