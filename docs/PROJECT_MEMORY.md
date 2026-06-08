@@ -13,6 +13,13 @@ share one Claude session, so memory carries across functions — the core differ
 Auth uses the **Claude CLI subscription plan** (no API key in v1); `plain` runtimes cost
 nothing. Built with the [ai-sprint](https://github.com/brunofitas/ai-sprint) workflow.
 
+## Repo
+
+Pushed to GitHub: **https://github.com/brunofitas/functions** (public, default `main`).
+`origin` = git@github.com:brunofitas/functions.git. Merge to `main` triggers the
+`release` workflow (GitVersion → tag vX.Y.Z → mac/linux/windows installers → GitHub Release);
+`ci` runs lint+tests. First push cut **v0.0.1**.
+
 ## Current state (2026-06-08)
 
 - **25/25 ai-sprint stories DONE** (4 design gates sealed; engine + adapters + resolver +
