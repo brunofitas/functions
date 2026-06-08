@@ -33,26 +33,44 @@ class Mounts:
 
 
 class ContainerManager:
-    def __init__(self, image: str = "functions-base:local", runner: Optional[CliRunner] = None):
-        self.image = image
-        self._run: CliRunner = runner or _default_runner
-
-    def name(self, run_id: str) -> str:
-        return f"functions-{run_id}"
-
     # NOTE: the library mounts at /srv/functions, NOT /lib — bind-mounting over the
     # container's /lib shadows libc + the dynamic loader and breaks every binary.
     LIB_MOUNT = "/srv/functions"
 
+    def __init__(
+        self,
+        image: str = "functions-base:local",
+        runner: Optional[CliRunner] = None,
+        entrypoint: Optional[str] = None,  # e.g. "sleep" for images with their own ENTRYPOINT
+        env: Optional[dict] = None,  # injected at run (e.g. CLAUDE_CODE_OAUTH_TOKEN)
+    ):
+        self.image = image
+        self._run: CliRunner = runner or _default_runner
+        self.entrypoint = entrypoint
+        self.env = env or {}
+
+    def name(self, run_id: str) -> str:
+        return f"functions-{run_id}"
+
     def create_argv(self, run_id: str, mounts: Mounts) -> list[str]:
-        return [
-            "docker", "run", "-d", "--name", self.name(run_id),
+        argv = ["docker", "run", "-d", "--name", self.name(run_id)]
+        if self.entrypoint:
+            argv += ["--entrypoint", self.entrypoint]
+        for key, value in self.env.items():
+            argv += ["-e", f"{key}={value}"]
+        argv += [
             "-v", f"{mounts.workspace}:/work",
             "-v", f"{mounts.lib}:{self.LIB_MOUNT}",
             "-v", f"{mounts.cache}:/cache",
             "-w", "/work",
-            self.image, "sleep", "infinity",
+            self.image,
         ]
+        # Keep the container alive so the orchestrator can `docker exec` into it.
+        if self.entrypoint == "sleep":
+            argv += ["infinity"]
+        elif self.entrypoint is None:
+            argv += ["sleep", "infinity"]
+        return argv
 
     def rm_argv(self, run_id: str) -> list[str]:
         return ["docker", "rm", "-f", self.name(run_id)]

@@ -41,9 +41,10 @@ class _Run:
 
 
 class RunManager:
-    def __init__(self, base_dir: str | Path = "."):
+    def __init__(self, base_dir: str | Path = ".", container_manager: Optional[object] = None):
         self.base_dir = str(base_dir)
         self.runs: dict[str, _Run] = {}
+        self.container_manager = container_manager  # ContainerManager → run in Docker
 
     def start(self, pipeline: PipelineManifest, base_dir: Optional[str] = None) -> _Run:
         run = _Run(uuid.uuid4().hex[:8], pipeline, base_dir or self.base_dir)
@@ -54,7 +55,17 @@ class RunManager:
         run = self.runs[run_id]
         run.status = "running"
         workspace = Path(tempfile.mkdtemp(prefix=f"fn-{run_id}-"))
-        container = LocalContainer(workspace)
+        if self.container_manager is not None:
+            from .manager import Mounts
+
+            mounts = Mounts(
+                workspace=str(workspace),
+                lib=run.base_dir,
+                cache=tempfile.mkdtemp(prefix="fn-cache-"),
+            )
+            container = self.container_manager.ensure_ready(run_id, mounts)
+        else:
+            container = LocalContainer(workspace)
         try:
             async for event in run_pipeline(
                 run.pipeline,

@@ -32,6 +32,14 @@ def test_argv_builders():
     assert m.rm_argv("r1") == ["docker", "rm", "-f", "functions-r1"]
 
 
+def test_argv_with_entrypoint_and_env():
+    m = ContainerManager(image="claude-docker:latest", entrypoint="sleep", env={"TOK": "x"})
+    create = m.create_argv("r2", MOUNTS)
+    assert "--entrypoint" in create and "sleep" in create
+    assert "-e" in create and "TOK=x" in create
+    assert create[-2:] == ["claude-docker:latest", "infinity"]  # entrypoint sleep + arg infinity
+
+
 def test_ensure_ready_creates_when_missing():
     fake = FakeDocker(exists=False)
     m = ContainerManager(runner=fake)
