@@ -9,8 +9,22 @@
   * { box-sizing: border-box; }
   body { margin: 0; font: 14px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
          background: #0f1115; color: #e6e6e6; }
-  #app { padding: 20px; max-width: 1000px; margin: 0 auto; }
-  h1 { font-size: 17px; } h2 { font-size: 13px; color: #9aa4b2; text-transform: uppercase; letter-spacing: .5px; }
+  #app { display: flex; flex-direction: column; height: 100vh; }
+  h2 { font-size: 12px; color: #9aa4b2; text-transform: uppercase; letter-spacing: .5px; margin: 0 0 10px; }
+  h3 { font-size: 15px; margin: 0 0 14px; }
+
+  /* top bar */
+  .topbar { display: flex; align-items: center; padding: 0 16px; height: 48px; flex: none;
+            border-bottom: 1px solid #222; background: #11141a; }
+  .brand { font-weight: 600; cursor: pointer; }
+  .topbar .icon-btn { margin-left: auto; background: transparent; color: #9aa4b2; font-size: 18px;
+                      width: 34px; height: 34px; padding: 0; border-radius: 8px; }
+  .topbar .icon-btn:hover { background: #1b2027; color: #e6e6e6; }
+  .topbar .icon-btn.active { background: #4f7cff; color: #fff; }
+
+  .content { flex: 1; min-height: 0; overflow: auto; padding: 20px; }
+
+  /* main view */
   .layout { display: flex; gap: 20px; }
   .sidebar { width: 280px; flex: none; }
   .main { flex: 1; min-width: 0; }
@@ -27,6 +41,19 @@
   .step.error .step-title { color: #ff8b88; }
   pre { margin: 0; padding: 8px 12px; white-space: pre-wrap; color: #cfd6e4; }
   .outputs { padding: 6px 12px; color: #c89bff; border-top: 1px solid #222; }
+
+  /* settings view */
+  .settings-layout { display: flex; gap: 24px; }
+  .settings-sidebar { width: 200px; flex: none; }
+  .menu-item { padding: 8px 12px; border-radius: 6px; color: #cfd6e4; cursor: default; }
+  .menu-item.active { background: #1b2027; color: #fff; }
+  .settings-panel { flex: 1; min-width: 0; max-width: 640px; }
+  .section-label { font-size: 11px; color: #9aa4b2; letter-spacing: .5px; margin-bottom: 8px; }
+  .engine-options { display: flex; flex-direction: column; gap: 8px; }
+  .engine-opt { display: flex; align-items: center; gap: 10px; padding: 12px 14px;
+                border: 1px solid #222; border-radius: 8px; background: #161a20; cursor: pointer; }
+  .engine-opt:has(input:checked) { border-color: #4f7cff; box-shadow: 0 0 0 1px #4f7cff55; }
+  .saved-note { margin-top: 12px; color: #7fe3a0; min-height: 20px; }
 </style>
 </head>
 <body>
