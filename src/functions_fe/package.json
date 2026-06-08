@@ -7,13 +7,14 @@
   "author": "Bruno Fitas <brunofitas@gmail.com>",
   "type": "module",
   "scripts": {
-    "build": "tsc -p tsconfig.json --noEmit false --outDir dist",
+    "build": "esbuild src/studio.ts --bundle --format=iife --outfile=dist/studio.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run --coverage"
   },
   "devDependencies": {
     "typescript": "^5.4.0",
     "vitest": "^2.0.0",
-    "@vitest/coverage-v8": "^2.0.0"
+    "@vitest/coverage-v8": "^2.0.0",
+    "esbuild": "^0.23.0"
   }
 }

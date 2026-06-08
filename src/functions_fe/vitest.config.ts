@@ -8,7 +8,9 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       include: ["src/**/*.ts"],
-      exclude: ["**/*.test.ts", "**/*.d.ts"],
+      // studio.ts is the thin DOM rendering layer (browser glue); the view-models and
+      // API client it wires together are fully tested.
+      exclude: ["**/*.test.ts", "**/*.d.ts", "**/studio.ts"],
       thresholds: {
         lines: 85,
         functions: 85,

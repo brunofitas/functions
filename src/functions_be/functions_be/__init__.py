@@ -34,6 +34,7 @@ from .resolver import (
     ResolveError,
 )
 from .runner import run_pipeline
+from .server import build_app, serve
 
 __version__ = "0.0.1"
 
@@ -67,8 +68,10 @@ __all__ = [
     "UnknownRuntimeError",
     "__version__",
     "auth",
+    "build_app",
     "build_registry",
     "create_app",
+    "serve",
     "get_adapter",
     "load_env_file",
     "load_function",
