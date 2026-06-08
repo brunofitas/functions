@@ -29,6 +29,8 @@ const DEMO: PipelineManifest = {
   flow: { mode: "standalone", end: { signal: "END" } },
 };
 
+const RUNTIMES = new Set(["python", "bash", "claude", "custom"]);
+
 function el(tag: string, attrs: Record<string, string> = {}, text = ""): HTMLElement {
   const e = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
@@ -36,7 +38,6 @@ function el(tag: string, attrs: Record<string, string> = {}, text = ""): HTMLEle
   return e;
 }
 
-// --- settings persistence: Electron IPC when present, else localStorage in a browser
 async function getEngine(): Promise<string> {
   if (window.functionsApp) return (await window.functionsApp.getSettings()).engine;
   return localStorage.getItem("engine") ?? "docker";
@@ -46,14 +47,25 @@ async function setEngine(value: string): Promise<void> {
   else localStorage.setItem("engine", value);
 }
 
+function chipClass(status: string): string {
+  if (status === "running") return "chip-running";
+  if (status === "done" || status === "ended") return "chip-done";
+  if (status === "error") return "chip-error";
+  return "chip-pending";
+}
+
 function renderConsole(rc: RunConsole, into: HTMLElement): void {
   into.innerHTML = "";
-  into.append(el("div", { class: "status" }, `run: ${rc.status}`));
+  const status = el("div", { class: "status" });
+  status.append(el("span", {}, "run"), el("span", { class: `chip ${chipClass(rc.status)}` }, rc.status));
+  into.append(status);
   for (const [id, s] of rc.steps) {
-    const box = el("div", { class: `step ${s.status}` });
-    box.append(el("div", { class: "step-title" }, `${id} — ${s.status}`));
+    const box = el("div", { class: "step" });
+    const head = el("div", { class: "step-title" });
+    head.append(el("span", { class: "step-name" }, id), el("span", { class: `chip ${chipClass(s.status)}` }, s.status));
+    box.append(head);
     if (s.output) box.append(el("pre", {}, s.output));
-    if (s.outputs) box.append(el("div", { class: "outputs" }, "outputs: " + JSON.stringify(s.outputs)));
+    if (s.outputs) box.append(el("div", { class: "outputs" }, "outputs · " + JSON.stringify(s.outputs)));
     into.append(box);
   }
 }
@@ -71,15 +83,21 @@ function buildMainView(): HTMLElement {
     const browser = new FunctionBrowser(api);
     try {
       await browser.load();
-      for (const f of browser.filtered())
-        list.append(el("div", { class: "fn" }, `${f.ref_id}  ·  ${f.runtime}`));
-      if (browser.filtered().length === 0) list.append(el("div", { class: "muted" }, "(none installed)"));
+      const fns = browser.filtered();
+      for (const f of fns) {
+        const row = el("div", { class: "fn" });
+        row.append(el("span", { class: "fn-name" }, f.ref_id));
+        const rt = RUNTIMES.has(f.runtime) ? f.runtime : "custom";
+        row.append(el("span", { class: `badge badge-${rt}` }, f.runtime));
+        list.append(row);
+      }
+      if (fns.length === 0) list.append(el("div", { class: "muted" }, "No functions installed."));
     } catch {
-      list.append(el("div", { class: "muted" }, "could not reach orchestrator"));
+      list.append(el("div", { class: "muted" }, "Could not reach the orchestrator."));
     }
   })();
 
-  const runBtn = el("button", {}, "▶ Run demo pipeline (greet → shout)") as HTMLButtonElement;
+  const runBtn = el("button", { class: "btn" }, "▶  Run demo pipeline (greet → shout)") as HTMLButtonElement;
   const consoleEl = el("div", { class: "console" });
   main.append(runBtn, consoleEl);
   runBtn.onclick = async () => {
@@ -94,7 +112,7 @@ function buildMainView(): HTMLElement {
     try {
       await rc.startAndWatch(DEMO);
     } catch {
-      consoleEl.textContent = "run failed to start";
+      consoleEl.textContent = "Run failed to start.";
       runBtn.disabled = false;
     }
   };
@@ -110,25 +128,29 @@ async function buildSettingsView(): Promise<HTMLElement> {
   view.append(menu, panel);
 
   panel.append(el("h3", {}, "General"));
-  panel.append(el("div", { class: "section-label" }, "ENGINE"));
+  panel.append(el("p", { class: "panel-sub" }, "Configure how pipelines run on this machine."));
+  panel.append(el("div", { class: "section-label" }, "Engine"));
+
   const opts = el("div", { class: "engine-options" });
   const note = el("div", { class: "saved-note" }, "");
   const current = await getEngine();
 
-  const choices: [string, string][] = [
-    ["docker", "Docker — run pipelines in sandboxed containers"],
-    ["local", "Local — run pipelines as host processes"],
+  const choices: [string, string, string][] = [
+    ["docker", "Docker", "Run pipelines in sandboxed containers."],
+    ["local", "Local", "Run pipelines as host processes."],
   ];
-  for (const [value, desc] of choices) {
+  for (const [value, title, desc] of choices) {
     const label = el("label", { class: "engine-opt" });
     const radio = el("input", { type: "radio", name: "engine", value }) as HTMLInputElement;
     radio.checked = value === current;
     radio.onchange = async () => {
-      note.textContent = "saving…";
+      note.textContent = "Saving…";
       await setEngine(value);
-      note.textContent = `Saved — engine: ${value} (applies to new runs)`;
+      note.textContent = `Saved · engine set to ${title} (applies to new runs)`;
     };
-    label.append(radio, el("span", {}, desc));
+    const txt = el("div", { class: "opt-text" });
+    txt.append(el("div", { class: "opt-title" }, title), el("div", { class: "opt-desc" }, desc));
+    label.append(radio, txt);
     opts.append(label);
   }
   panel.append(opts, note);
@@ -140,9 +162,14 @@ function main(): void {
   app.innerHTML = "";
 
   const topbar = el("div", { class: "topbar" });
-  const brand = el("div", { class: "brand" }, "⛓️ functions — Studio");
+  const brand = el("div", { class: "brand" });
+  brand.append(el("span", { class: "logo" }, "⛓"));
+  const wordmark = el("span", {});
+  wordmark.append(document.createTextNode("functions "), el("span", { class: "brand-sub" }, "Studio"));
+  brand.append(wordmark);
   const gear = el("button", { class: "icon-btn", title: "Settings" }, "⚙") as HTMLButtonElement;
   topbar.append(brand, gear);
+
   const content = el("div", { class: "content" });
   app.append(topbar, content);
 
