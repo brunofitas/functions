@@ -1,0 +1,19 @@
+{
+  "name": "functions-fe",
+  "version": "0.0.1",
+  "private": true,
+  "description": "functions — Studio GUI (run console, pipeline editor, browser, settings)",
+  "license": "MIT",
+  "author": "Bruno Fitas <brunofitas@gmail.com>",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit false --outDir dist",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "vitest": "^2.0.0",
+    "@vitest/coverage-v8": "^2.0.0"
+  }
+}
